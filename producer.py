@@ -1,23 +1,21 @@
 import json
-from quixstreams import Application
 import time
+from confluent_kafka import Producer
 
+producer = Producer({'bootstrap.servers': 'localhost:9092'})
 
-def main():
-    app = Application(broker_address="localhost:9092", loglevel="DEBUG")
+def delivery_report(err, msg):
+    print(f"Message delivery {'failed' if err else 'succeeded'}: {err or msg.topic()}")
 
-    with app.get_producer() as producer:
-        while True:
-            message = {"message": "Hello from Producer!"}
-
-            producer.produce(
-                topic="kafka_connection",
-                key="Kafka Hello",
-                value=json.dumps(message),
-            )
-            
-            time.sleep(2)
-
-if __name__ == "__main__":
-    main()
-
+try:
+    while True:
+        producer.produce(
+            topic="kafka_connection",
+            key="Kafka Hello",
+            value=json.dumps({"message": "Hello from Producer!"}),
+            callback=delivery_report
+        )
+        producer.flush()
+        time.sleep(2)
+except KeyboardInterrupt:
+    print("Producer exited.")
